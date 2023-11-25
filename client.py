@@ -9,8 +9,11 @@ def remove_patient_queue(client, username):
     remove_queue = input("Do you want to remove your existing queue? (yes/no): ")
     if remove_queue.lower() == "yes":
         try:
-            client.remove_queue(username)
-            print("Queue removed.")
+            response = client.remove_queue(username)
+            if response:
+                print("Queue removed.")
+            else:
+                print("Queue not found.")
         except Exception as e:
             print(f"Error removing queue: {e}")
 
