@@ -5,6 +5,15 @@ def login():
     username = input("Enter username: ")
     return user_type, username
 
+def remove_patient_queue(client, username):
+    remove_queue = input("Do you want to remove your existing queue? (yes/no): ")
+    if remove_queue.lower() == "yes":
+        try:
+            client.remove_queue(username)
+            print("Queue removed.")
+        except Exception as e:
+            print(f"Error removing queue: {e}")
+
 def main():
     client = xmlrpc.client.ServerProxy('http://127.0.0.1:5555/')
     user_type, username = login()
@@ -26,12 +35,10 @@ def main():
                         print(f"Registered successfully. Your queue number is {response}")
                     else:
                         print("You are already registered.")
-                        remove_queue = input("Do you want to remove your existing queue? (yes/no): ")
-                        if remove_queue.lower() == "yes":
-                            # Implement logic to remove patient's queue
-                            print("Queue removed.")
+                        remove_patient_queue(client, username)
                 else:
                     print("You are already registered.")
+                    remove_patient_queue(client, username)
 
             elif user_type == "admin":
                 print("Admins cannot register to clinics.")
