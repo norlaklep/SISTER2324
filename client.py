@@ -79,4 +79,13 @@ def main():
                 else:
                     print("Invalid client number.")
             elif user_type == "admin":
-                print("
+                print("Admins cannot estimate wait time for patients.")
+
+        elif choice == "4":
+            break
+
+        else:
+            print("Invalid choice. Please enter a number between 1 and 4.")
+
+if __name__ == "__main__":
+    main()
