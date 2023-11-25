@@ -35,6 +35,17 @@ class ClinicQueue:
     def is_patient_registered(self, client_name):
         return client_name in self.registered_patients
 
+    def remove_queue(self, client_name):
+        for i, (number, name) in enumerate(self.queue):
+            if name == client_name:
+                del self.queue[i]
+                self.registered_patients.remove(client_name)
+                print(f"Queue removed for {client_name}")
+                return True
+
+        print(f"Queue not found for {client_name}")
+        return False
+
 clinic_queue = ClinicQueue()
 
 def register(client_name):
@@ -52,12 +63,16 @@ def estimate_wait_time(client_number):
 def is_patient_registered(client_name):
     return clinic_queue.is_patient_registered(client_name)
 
+def remove_queue(client_name):
+    return clinic_queue.remove_queue(client_name)
+
 def main():
     server = SimpleXMLRPCServer(('127.0.0.1', 5555), requestHandler=SimpleXMLRPCRequestHandler)
     server.register_function(register, 'register')
     server.register_function(get_queue, 'get_queue')
     server.register_function(estimate_wait_time, 'estimate_wait_time')
     server.register_function(is_patient_registered, 'is_patient_registered')
+    server.register_function(remove_queue, 'remove_queue')
 
     print("Server listening on port 5555...")
     server.serve_forever()
