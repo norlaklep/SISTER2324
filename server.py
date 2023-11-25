@@ -1,4 +1,5 @@
-import socket
+from xmlrpc.server import SimpleXMLRPCServer
+from xmlrpc.server import SimpleXMLRPCRequestHandler
 import threading
 import time
 
@@ -6,11 +7,13 @@ class ClinicQueue:
     def __init__(self):
         self.queue = []
         self.current_number = 1
+        self.registered_patients = set()
 
     def enqueue(self, client_name):
         number = self.current_number
         self.queue.append((number, client_name))
         self.current_number += 1
+        self.registered_patients.add(client_name)
         return number
 
     def dequeue(self):
@@ -29,48 +32,35 @@ class ClinicQueue:
 
         return -1  # Invalid client number
 
-def handle_client(client_socket, clinic_queue):
-    client_name = client_socket.recv(1024).decode()
-    print(f"Client {client_name} connected.")
+    def is_patient_registered(self, client_name):
+        return client_name in self.registered_patients
 
-    while True:
-        data = client_socket.recv(1024).decode()
+clinic_queue = ClinicQueue()
 
-        if data == "REGISTER":
-            number = clinic_queue.enqueue(client_name)
-            client_socket.send(f"Registered successfully. Your queue number is {number}".encode())
+def register(client_name):
+    if clinic_queue.is_patient_registered(client_name):
+        return -1  # Patient is already registered
+    else:
+        return clinic_queue.enqueue(client_name)
 
-        elif data == "GET_QUEUE":
-            queue_data = clinic_queue.get_queue_data()
-            client_socket.send(str(queue_data).encode())
+def get_queue():
+    return clinic_queue.get_queue_data()
 
-        elif data.startswith("ESTIMATE_WAIT_TIME"):
-            _, client_number_str = data.split(" ")
-            client_number = int(client_number_str)
-            wait_time = clinic_queue.estimate_wait_time(client_number)
-            if wait_time != -1:
-                client_socket.send(f"Your estimated wait time is {wait_time} minutes.".encode())
-            else:
-                client_socket.send("Invalid client number.".encode())
+def estimate_wait_time(client_number):
+    return clinic_queue.estimate_wait_time(client_number)
 
-        elif data == "EXIT":
-            print(f"Client {client_name} disconnected.")
-            break
-
-    client_socket.close()
+def is_patient_registered(client_name):
+    return clinic_queue.is_patient_registered(client_name)
 
 def main():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(('127.0.0.1', 5555))
-    server.listen(5)
+    server = SimpleXMLRPCServer(('127.0.0.1', 5555), requestHandler=SimpleXMLRPCRequestHandler)
+    server.register_function(register, 'register')
+    server.register_function(get_queue, 'get_queue')
+    server.register_function(estimate_wait_time, 'estimate_wait_time')
+    server.register_function(is_patient_registered, 'is_patient_registered')
+
     print("Server listening on port 5555...")
-
-    clinic_queue = ClinicQueue()
-
-    while True:
-        client_socket, addr = server.accept()
-        client_handler = threading.Thread(target=handle_client, args=(client_socket, clinic_queue))
-        client_handler.start()
+    server.serve_forever()
 
 if __name__ == "__main__":
     main()
